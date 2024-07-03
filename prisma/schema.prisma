@@ -66,6 +66,7 @@ model Conversation{
     userIds String[] @db.ObjectId
     users User[] @relation (fields: [userIds] ,references: [id])
 }
+//The users field in the Conversation model is defined as a relational field that references the User model through the userIds field.
 
 model Message {
   id String @id @default(auto()) @map("_id") @db.ObjectId
