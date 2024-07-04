@@ -3,6 +3,8 @@ import getCurrentUser from "@/app/actions/getCurrentUser"
 import { NextResponse } from "next/server"
 import prisma from "@/app/libs/prismadb"
 
+import { pusherServer } from "@/app/libs/pusher";
+
 
 export async function POST(
     request:Request  //request is an instance of the Request object provided by the Next.js API routes. This Request object contains information about the HTTP request that was made to your API endpoint. Here are some key aspects of the Request object:
@@ -69,6 +71,20 @@ export async function POST(
             }
 
         })
+
+        await pusherServer.trigger(conversationId,'messages:new',newMessage)
+        //trigger: This method is used to send a message or trigger an event to clients subscribed to a specific channel in Pusher.
+        //this specific channel is the conversationId.
+        //above line is going to add the new message to UI
+
+        const lastMessage=updatedConversation.messages[updatedConversation.messages.length-1];
+
+        updatedConversation.users.map((user) => {
+            pusherServer.trigger(user.email!, 'conversation:update', {
+              id: conversationId,
+              messages: [lastMessage],
+            });
+          });
 
         return NextResponse.json(newMessage);
 

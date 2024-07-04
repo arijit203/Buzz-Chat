@@ -1,5 +1,6 @@
 "use client";
 
+//Grp Avatar
 import { User } from "@prisma/client";
 import Image from "next/image";
 

@@ -43,11 +43,9 @@ function ProfileDrawer({ isOpen, onClose, data }:ProfileDrawerProps) {
         <>
         <ConfirmModal 
         isOpen={confirmOpen} 
-        onClose={()=>setConfirmOpen(false)}>
-        <div className='bg-white p-5'>
-            <p>Hello Modal!</p>
-        </div>
-        </ConfirmModal>
+        onClose={()=>setConfirmOpen(false)} />
+        
+       
         <Transition.Root show={isOpen} as={Fragment}>
         <Dialog as="div" className="relative z-50" onClose={onClose}>
           <Transition.Child

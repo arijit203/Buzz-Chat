@@ -1,6 +1,7 @@
 'use client'
 
 import Avatar from '@/app/components/Avatar';
+import LoadingModal from '@/app/components/LoadingModal';
 import { User } from '@prisma/client'
 import axios from 'axios';
 import { useRouter } from 'next/navigation'
@@ -20,6 +21,9 @@ function UserBox({data}:{data:User}) {
   },[data,router])
   
   return (
+    <>
+    {isLoading && <LoadingModal/> }
+    
     <div onClick={handleClick}
     className="
       w-full 
@@ -43,6 +47,7 @@ function UserBox({data}:{data:User}) {
           </div>
         </div>
     </div>
+    </>
   )
 }
 

@@ -36,6 +36,7 @@ function ConfirmModal({isOpen,onClose}:ConfirmModalProps) {
             onClose();
             router.push("/conversations");
             router.refresh();
+            toast.success("Chat Deleted Successfully");
           })
           .catch(() => toast.error("Something went wrong!"))
           .finally(() => setIsLoading(false));

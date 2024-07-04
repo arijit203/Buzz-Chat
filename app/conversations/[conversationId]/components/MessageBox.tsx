@@ -5,8 +5,9 @@ import { FullMessageType } from '@/app/types'
 import clsx from 'clsx';
 import { useSession } from 'next-auth/react'
 import Image from 'next/image';
-import React from 'react'
+import React, { useState } from 'react'
 import {format} from "date-fns"
+import ImageModal from './ImageModal';
 
 interface MessageBoxProps{
     data:FullMessageType,
@@ -15,6 +16,8 @@ interface MessageBoxProps{
 function MessageBox({data,isLast}:MessageBoxProps) {
     
     const session=useSession();
+
+    const [imageModalOpen,setImageModalOpen]=useState(false);
 
     const isOwn=session?.data?.user?.email === data?.sender?.email;
     //to check whether the current session user is same as the one who sent the msg
@@ -48,17 +51,14 @@ function MessageBox({data,isLast}:MessageBoxProps) {
           </div>
           <div className={message}>
 
-            {/* <ImageModal
-              src={data.image}
-              isOpen={imageModalOpen}
-              onClose={() => setImageModalOpen(false)}
-            /> */}
+            <ImageModal src={data.image} isOpen={imageModalOpen} 
+            onClose={()=>setImageModalOpen(false)}/>
             {data.image ? (
               <Image
                 alt="Image"
                 height="288"
                 width="288"
-                // onClick={() => setImageModalOpen(true)}
+                onClick={() => setImageModalOpen(true)}
                 src={data.image}
                 className="
                   object-cover 
