@@ -59,7 +59,7 @@ function Form() {
         <CldUploadButton 
         options={{maxFiles:1}}
         onSuccess={handleUpload}
-        uploadPreset='afono6yx'
+        uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_PRESET_NAME}
         >
           <HiPhoto size={30} />
         </CldUploadButton>
