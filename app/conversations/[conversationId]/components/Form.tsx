@@ -7,6 +7,7 @@ import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
 import { HiPhoto } from 'react-icons/hi2';
 import MessageInput from './MessageInput';
 import { HiPaperAirplane } from 'react-icons/hi2';
+import {CldUploadButton} from "next-cloudinary"
 
 function Form() {
 
@@ -33,6 +34,13 @@ function Form() {
         //setValue('message', ''): This sets the value of the message field to an empty string. It's a way to clear the input field after the form has been submitted.
         setValue('message','',{shouldValidate:true})
     }
+
+    const handleUpload=(result:any)=>{
+      axios.post('/api/messages',{
+        image:result?.info?.secure_url,
+        conversationId
+      })
+    }
   return (
     <div
       className="
@@ -48,7 +56,15 @@ function Form() {
         
       "
     >
-        <HiPhoto size={30} />
+        <CldUploadButton 
+        options={{maxFiles:1}}
+        onSuccess={handleUpload}
+        uploadPreset='afono6yx'
+        >
+          <HiPhoto size={30} />
+        </CldUploadButton>
+        
+       
         <form onSubmit={handleSubmit(onSubmit)}
             className="flex items-center gap-2 lg:gap-4 w-full"
         >
