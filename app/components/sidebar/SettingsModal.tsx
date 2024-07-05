@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-//for changing/edit the name and image or profile of the current user
+// for changing/editing the name and image or profile of the current user
 
 import axios from "axios";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
 
@@ -25,6 +25,8 @@ interface SettingsModalProps {
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentUser }) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [initialImage, setInitialImage] = useState(currentUser?.image || "");
+  const [initialName, setInitialName] = useState(currentUser?.name || "");
 
   const {
     register,
@@ -40,11 +42,35 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentU
   });
 
   const image = watch("image");
+  const name = watch("name");
+
+  useEffect(() => {
+    if (isOpen) {
+      setInitialImage(currentUser?.image || "");
+      setInitialName(currentUser?.name || "");
+      setValue('image', currentUser?.image || "");
+      setValue('name', currentUser?.name || "");
+    }
+  }, [isOpen, currentUser, setValue]);
 
   const handleUpload = (result: any) => {
-    setValue("image", result.info.secure_url, {
-      shouldValidate: true,
-    });
+    const fileType = result.info.resource_type;
+    const fileFormat = result.info.format;
+
+    const allowedFormats = ['jpg', 'jpeg', 'png', 'webp'];
+    
+    if (fileType === 'image' && allowedFormats.includes(fileFormat)) {
+      setValue('image', result.info.secure_url, { shouldValidate: true });
+    } else {
+      console.error('Uploaded file is not an allowed image format');
+      toast.error('Please upload an image file (jpg, jpeg, png)');
+    }
+  };
+
+  const handleCancel = () => {
+    setValue('image', initialImage, { shouldValidate: true });
+    setValue('name', initialName, { shouldValidate: true });
+    onClose();
   };
 
   const onSubmit: SubmitHandler<FieldValues> = (data) => {
@@ -55,29 +81,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentU
       .then(() => {
         router.refresh();
         onClose();
-        toast.success("User profile Updated");
+        // toast.success("User profile updated");
       })
       .catch(() => toast.error("Something went wrong!"))
       .finally(() => setIsLoading(false));
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal isOpen={isOpen} onClose={handleCancel}>
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="space-y-12">
           <div className="border-b border-gray-900/10 pb-12">
-            <h2
-              className="
-                text-base 
-                font-semibold 
-                leading-7 
-                text-gray-900
-                
-              "
-            >
+            <h2 className="text-base font-semibold leading-7 text-gray-900">
               Profile
             </h2>
-            <p className="mt-1 text-sm leading-6 text-gray-600 ">
+            <p className="mt-1 text-sm leading-6 text-gray-600">
               Edit your profile information.
             </p>
 
@@ -93,14 +111,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentU
               <div>
                 <label
                   htmlFor="photo"
-                  className="
-                    block 
-                    text-sm 
-                    font-medium 
-                    leading-6 
-                    text-gray-900
-                    
-                  "
+                  className="block text-sm font-medium leading-6 text-gray-900"
                 >
                   Photo
                 </label>
@@ -113,7 +124,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentU
                     alt="Avatar"
                   />
                   <CldUploadButton
-                    options={{ maxFiles: 1 }}
+                    options={{ resourceType: 'image', maxFiles: 1 }}
                     onSuccess={handleUpload}
                     uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_PRESET_NAME}
                   >
@@ -127,16 +138,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentU
           </div>
         </div>
 
-        <div
-          className="
-            mt-6 
-            flex 
-            items-center 
-            justify-end 
-            gap-x-6
-          "
-        >
-          <Button disabled={isLoading} secondary onClick={onClose}>
+        <div className="mt-6 flex items-center justify-end gap-x-6">
+          <Button disabled={isLoading} secondary onClick={handleCancel}>
             Cancel
           </Button>
           <Button disabled={isLoading} type="submit">

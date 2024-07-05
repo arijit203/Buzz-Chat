@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 
 import prisma from '@/app/libs/prismadb'
 import { pusherServer } from "@/app/libs/pusher";
+import toast from "react-hot-toast";
 
 export async function POST(
     request: Request
@@ -23,8 +24,9 @@ export async function POST(
             return new NextResponse('Unauthorized',{status:401});
 
         }
-
-        if(isGroup && (!members || members.lenght<2 || !name)){
+        
+        if(isGroup && (!members || members.length<2 || !name)){
+            toast.error("More than 2 members required for group formation");
             return new NextResponse('Invalid Data',{status:400});
         }
 

@@ -4,11 +4,15 @@ import { User } from '@prisma/client'
 import React from 'react'
 
 import Image from "next/image"
+import useActiveList from '../hooks/useActiveList'
 interface AvatarProps{
     user?:User | null
 }
 
 function Avatar({user}:AvatarProps) {
+  const { members } = useActiveList();
+  const isActive = members.indexOf(user?.email!) !== -1;
+  // console.log("Active::: ",isActive );
   return (
     <div className='relative'>
 
@@ -31,7 +35,12 @@ function Avatar({user}:AvatarProps) {
           alt="Avatar"
         />
         </div>
-        <span className=' absolute 
+        
+           
+        {isActive && (
+        <span
+          className="
+            absolute 
             block 
             rounded-full 
             bg-green-500 
@@ -43,7 +52,11 @@ function Avatar({user}:AvatarProps) {
             w-2 
             md:h-3 
             md:w-3
-            dark:ring-lightgray'/>
+            dark:ring-lightgray
+          "
+        />
+      )}
+        
     </div>
   )
 }

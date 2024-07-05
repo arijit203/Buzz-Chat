@@ -8,73 +8,78 @@ import axios from 'axios';
 import { pusherClient } from '@/app/libs/pusher';
 import { find } from 'lodash';
 
-
-interface BodyProps{
-  initialMessages:FullMessageType[]
+interface BodyProps {
+  initialMessages: FullMessageType[]
 }
-export default function Body({initialMessages}:BodyProps) {
-  
-  const [messages,setMessages]=useState(initialMessages);
 
-  const bottomRef=useRef<HTMLDivElement >(null);
+export default function Body({ initialMessages }: BodyProps) {
 
-  const {conversationId}=useConversation();
+  const [messages, setMessages] = useState(initialMessages);
 
-  useEffect(()=>{
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const { conversationId } = useConversation();
+
+  // Ensure messages are marked as seen when the conversationId changes
+  useEffect(() => {
     axios.post(`/api/conversations/${conversationId}/seen`)
-  },[conversationId]);
+  }, [conversationId]);
 
-  useEffect(()=>{
+  // Handle new and updated messages
+  useEffect(() => {
     pusherClient.subscribe(conversationId);
-    bottomRef?.current?.scrollIntoView();
+
+    const scrollToBottom = () => {
+      bottomRef?.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    scrollToBottom();
 
     const messageHandler = (message: FullMessageType) => {
       axios.post(`/api/conversations/${conversationId}/seen`);
       setMessages((current) => {
         if (find(current, { id: message.id })) {
-          return current;   //mainly checks if the current: messages array, is there any message already present with the same id so as to prevent duplication 
+          return current; // Prevent duplication
         }
-
         return [...current, message];
       });
-
-      bottomRef?.current?.scrollIntoView();
+      scrollToBottom();
     }
-
 
     const updateMessageHandler = (newMessage: FullMessageType) => {
       setMessages((current) =>
         current.map((currentMessage) => {
-          // update the message only if it matches the new message id
           if (currentMessage.id === newMessage.id) {
             return newMessage;
           }
-
           return currentMessage;
         })
       );
     };
 
-    pusherClient.bind('messages:new',messageHandler);   
+    pusherClient.bind('messages:new', messageHandler);
+    pusherClient.bind('message:update', updateMessageHandler);
 
-    pusherClient.bind('message:update',updateMessageHandler);
-
-    return ()=>{
+    return () => {
       pusherClient.unsubscribe(conversationId);
-      pusherClient.unbind('messages:new',messageHandler);
-      pusherClient.unbind('message:update',updateMessageHandler);
+      pusherClient.unbind('messages:new', messageHandler);
+      pusherClient.unbind('message:update', updateMessageHandler);
     }
-  },[conversationId])
+  }, [conversationId]);
+
+  // Ensure the component always scrolls to the bottom when messages change
+  useEffect(() => {
+    bottomRef?.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   return (
     <div className="flex-1 overflow-y-auto">
-       {messages.map((message, i) => (
+      {messages.map((message, i) => (
         <MessageBox isLast={i === messages.length - 1} 
         key={message.id} 
         data={message} />
       ))}
-    <div className="pt-1" ref={bottomRef} />
-  </div>
-
+      <div className="pt-1" ref={bottomRef} />
+    </div>
   )
 }
