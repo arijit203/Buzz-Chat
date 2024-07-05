@@ -53,7 +53,7 @@ function ConversationBox({data,selected}:ConversationBoxProps) {
     
 
     const lastMessageText=useMemo(()=>{  //to check if last message is a text
-        const fileExtension = lastMessage.image?.split('.').pop()?.toLowerCase() || '';
+        const fileExtension = lastMessage?.image?.split('.').pop()?.toLowerCase() || '';
 
         // Determine the type of media based on the file extension
         const isImage = ['jpg', 'jpeg', 'png'].includes(fileExtension);
