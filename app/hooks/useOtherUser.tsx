@@ -21,3 +21,6 @@ const useOtherUser = (conversation: FullConversationType | { users: User[] }) =>
 };
 
 export default useOtherUser;
+
+
+

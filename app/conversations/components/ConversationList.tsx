@@ -1,7 +1,7 @@
 'use client';
 
 import useConversation from "@/app/hooks/useConversation";
-import { Conversation, User } from "@prisma/client";
+import { User } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
@@ -12,108 +12,116 @@ import GroupChatModal from "./GroupChatModal";
 import { useSession } from "next-auth/react";
 import { pusherClient } from "@/app/libs/pusher";
 import { find } from "lodash";
+import Search from "@/app/components/Search";
+import useOtherUserList from "@/app/hooks/useOtherUserList"
 
-interface ConversationListProps{
-    initialItems:FullConversationType[];
-    users:User[]
+interface ConversationListProps {
+  initialItems: FullConversationType[];
+  users: User[];
 }
 
+const ConversationList = ({ initialItems, users }: ConversationListProps) => {
+  const [items, setItems] = useState(initialItems); // initialItems contains the set of conversations
+  const [filteredItems, setFilteredItems] = useState(initialItems); // Filtered items
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(""); // Search query state
 
-const ConversationList =({initialItems,users}:ConversationListProps)=>{
-    
-    const [items,setItems]=useState(initialItems); //initialItems contains the set of conversations
-    const [isModalOpen,setIsModalOpen]=useState(false);
+  const router = useRouter();
+  const { conversationId, isOpen } = useConversation();
+  const session = useSession();
 
-    const router=useRouter();
-    const {conversationId,isOpen}=useConversation();
-    const session = useSession();
+  const pusherKey = useMemo(() => {
+    return session.data?.user?.email;
+  }, [session.data?.user?.email]);
 
-    const pusherKey = useMemo(() => {
-      return session.data?.user?.email;
-    }, [session.data?.user?.email]);
-  
+  useEffect(() => {
+    if (!pusherKey) {
+      return;
+    }
 
-    useEffect(() => {
-      if (!pusherKey) {
-        return;
-      }
-  
-      pusherClient.subscribe(pusherKey);
-  
-      const updateHandler = (conversation: FullConversationType) => {
-        setItems((current) =>
-          current.map((currentConversation) => {
-            if (currentConversation.id === conversation.id) {
-              return {
-                ...currentConversation,
-                messages: conversation.messages,
-              };
-            }
-  
-            return currentConversation;
-          })
-        );
-      };
-  
-      const newHandler = (conversation: FullConversationType) => {
-        setItems((current) => {
-          // skip if the conversation already exists
-          if (find(current, { id: conversation.id })) {
-            return current;
+    pusherClient.subscribe(pusherKey);
+
+    const updateHandler = (conversation: FullConversationType) => {
+      setItems((current) =>
+        current.map((currentConversation) => {
+          if (currentConversation.id === conversation.id) {
+            return {
+              ...currentConversation,
+              messages: conversation.messages,
+            };
           }
-  
-          return [conversation, ...current];
-        });
-      };
-  
-      const removeHandler = (conversation: FullConversationType) => {
-        setItems((current) => {
-          return [...current.filter((convo) => convo.id !== conversation.id)];
-        });
-  
-        if (conversationId == conversation.id) {
-          router.push("/conversations");
+          return currentConversation;
+        })
+      );
+    };
+
+    const newHandler = (conversation: FullConversationType) => {
+      setItems((current) => {
+        // skip if the conversation already exists
+        if (find(current, { id: conversation.id })) {
+          return current;
         }
-      };
-  
-      pusherClient.bind('conversation:update', updateHandler);
-      pusherClient.bind('conversation:new', newHandler);
-      pusherClient.bind('conversation:delete', removeHandler);
+        return [conversation, ...current];
+      });
+    };
 
-      return ()=>{
-        pusherClient.unbind('conversation:update', updateHandler);
-        pusherClient.unbind('conversation:new', newHandler);
-        pusherClient.unbind('conversation:delete', removeHandler);
+    const removeHandler = (conversation: FullConversationType) => {
+      setItems((current) => {
+        return [...current.filter((convo) => convo.id !== conversation.id)];
+      });
+
+      if (conversationId == conversation.id) {
+        router.push("/conversations");
       }
-    }, [conversationId, pusherKey, router]);
-  
-    
-    return (
-      <>
-       <GroupChatModal users={users} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+    };
 
-       <aside className={clsx(
-        `
-        fixed 
-        inset-y-0 
-        pb-20
-        lg:pb-0
-        lg:left-20 
-        lg:w-80 
-        lg:block
-        overflow-y-auto 
-        border-r 
-        border-gray-200 
-        
-      `,
-        isOpen ? "hidden" : "block w-full left-0"
-      )}>
+    pusherClient.bind('conversation:update', updateHandler);
+    pusherClient.bind('conversation:new', newHandler);
+    pusherClient.bind('conversation:delete', removeHandler);
+
+    return () => {
+      pusherClient.unbind('conversation:update', updateHandler);
+      pusherClient.unbind('conversation:new', newHandler);
+      pusherClient.unbind('conversation:delete', removeHandler);
+    };
+  }, [conversationId, pusherKey, router]);
+
+  //filter conversations based on search query
+  const conversationsWithOtherUsers = useOtherUserList(initialItems);
+  useEffect(() => {
+    const filtered = conversationsWithOtherUsers.filter((item) => {
+      const name = item.isGroup ? item.name : item.otherUser?.name;
+      return name?.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+    setFilteredItems(filtered);
+  }, [searchQuery, conversationsWithOtherUsers]);
+
+  return (
+    <>
+      <GroupChatModal users={users} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+
+      <aside
+        className={clsx(
+          `
+          fixed 
+          inset-y-0 
+          pb-20
+          lg:pb-0
+          lg:left-20 
+          lg:w-80 
+          lg:block
+          overflow-y-auto 
+          border-r 
+          border-gray-200 
+        `,
+          isOpen ? "hidden" : "block w-full left-0"
+        )}
+      >
         <div className="px-5">
           <div className="flex justify-between mb-4 pt-4">
-            <div className="text-2xl font-bold text-neutral-800 ">
-                Messages
-            </div>
-            <div className="
+            <div className="text-2xl font-bold text-neutral-800 ">Messages</div>
+            <div
+              className="
                 rounded-full 
                 p-2 
                 bg-gray-100 
@@ -122,21 +130,19 @@ const ConversationList =({initialItems,users}:ConversationListProps)=>{
                 hover:opacity-75 
                 transition                
               "
-              onClick={()=>setIsModalOpen(true)}
-              >
-            <MdOutlineGroupAdd size={20} />
+              onClick={() => setIsModalOpen(true)}
+            >
+              <MdOutlineGroupAdd size={20} />
             </div>
-            </div>
-            {items.map((item) => (
-            <ConversationBox
-             key={item.id} data={item} 
-             selected={conversationId === item.id} />
+          </div>
+          <Search searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+          {filteredItems.map((item) => (
+            <ConversationBox key={item.id} data={item} selected={conversationId === item.id} />
           ))}
-            
         </div>
-       </aside>
-      </>
-    )
-}
+      </aside>
+    </>
+  );
+};
 
-export default ConversationList
+export default ConversationList;
