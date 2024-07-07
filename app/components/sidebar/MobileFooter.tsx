@@ -13,8 +13,8 @@ function MobileFooter({ currentUser }:{currentUser:User}) {
 
     const routes = useRoutes();
     const { isOpen } = useConversation();
-    const [open, setOpen] = useState(false);
-
+    const [open, setOpen] = useState(false);  
+    
     if (isOpen) return null;
 
     return (
