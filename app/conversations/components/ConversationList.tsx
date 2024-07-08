@@ -13,7 +13,7 @@ import { useSession } from "next-auth/react";
 import { pusherClient } from "@/app/libs/pusher";
 import { find } from "lodash";
 import Search from "@/app/components/Search";
-import useOtherUserList from "@/app/hooks/useOtherUserList"
+import useOtherUserList from "@/app/hooks/useOtherUserList";
 
 interface ConversationListProps {
   initialItems: FullConversationType[];
@@ -42,6 +42,7 @@ const ConversationList = ({ initialItems, users }: ConversationListProps) => {
     pusherClient.subscribe(pusherKey);
 
     const updateHandler = (conversation: FullConversationType) => {
+      // console.log("Update handler called with conversation:", conversation);
       setItems((current) =>
         current.map((currentConversation) => {
           if (currentConversation.id === conversation.id) {
@@ -56,6 +57,7 @@ const ConversationList = ({ initialItems, users }: ConversationListProps) => {
     };
 
     const newHandler = (conversation: FullConversationType) => {
+      // console.log("New handler called with conversation:", conversation);
       setItems((current) => {
         // skip if the conversation already exists
         if (find(current, { id: conversation.id })) {
@@ -66,8 +68,9 @@ const ConversationList = ({ initialItems, users }: ConversationListProps) => {
     };
 
     const removeHandler = (conversation: FullConversationType) => {
+      // console.log("Remove handler called with conversation:", conversation);
       setItems((current) => {
-        return [...current.filter((convo) => convo.id !== conversation.id)];
+        return current.filter((convo) => convo.id !== conversation.id);
       });
 
       if (conversationId == conversation.id) {
@@ -75,26 +78,27 @@ const ConversationList = ({ initialItems, users }: ConversationListProps) => {
       }
     };
 
-    pusherClient.bind('conversation:update', updateHandler);
     pusherClient.bind('conversation:new', newHandler);
+    pusherClient.bind('conversation:update', updateHandler);
     pusherClient.bind('conversation:delete', removeHandler);
 
     return () => {
+      pusherClient.unsubscribe(pusherKey);
       pusherClient.unbind('conversation:update', updateHandler);
       pusherClient.unbind('conversation:new', newHandler);
       pusherClient.unbind('conversation:delete', removeHandler);
     };
   }, [conversationId, pusherKey, router]);
 
-  //filter conversations based on search query
-  const conversationsWithOtherUsers = useOtherUserList(initialItems);
+  // Filter conversations based on search query
+  const conversationsWithOtherUsers = useOtherUserList(items);
   useEffect(() => {
     const filtered = conversationsWithOtherUsers.filter((item) => {
       const name = item.isGroup ? item.name : item.otherUser?.name;
       return name?.toLowerCase().includes(searchQuery.toLowerCase());
     });
     setFilteredItems(filtered);
-  }, [searchQuery, conversationsWithOtherUsers]);
+  }, [searchQuery, items, conversationsWithOtherUsers]);
 
   return (
     <>

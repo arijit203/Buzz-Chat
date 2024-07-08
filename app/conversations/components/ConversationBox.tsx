@@ -22,6 +22,7 @@ function ConversationBox({data,selected}:ConversationBoxProps) {
     const otherUser=useOtherUser(data);
     const session=useSession();
     const router=useRouter();
+    // console.log('ConversationBox rendered with data:', data);
 
     const handleClick = useCallback(() => {
         router.push(`/conversations/${data.id}`);
